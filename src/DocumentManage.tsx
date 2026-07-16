@@ -14,13 +14,24 @@ import {
 
 import ControlPointIcon from '@mui/icons-material/ControlPoint';
 
+import CircularProgress from '@mui/material/CircularProgress';
+
 import CloseIcon from '@mui/icons-material/Close';
+import { Button, Dialog, DialogActions, DialogContent } from "@mui/material";
 
 export const DocumentManage = () =>{
     const [files, setFiles] = useState([])
+    const [addingDoc, setAddingDoc] = useState(false)
+    const [gettingDocs, setGettingDocs] = useState(false)
+    const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
+    const [fileToDelete, setFiletToDelete] = useState<number | null>(null)
+    
     const getDocuments = async() => {
+        setGettingDocs(true)
         await documentServices.getDocuments().then(res=>{
             setFiles(res.files)
+        }).finally(()=>{
+            setGettingDocs(false)
         })
     }
 
@@ -28,22 +39,40 @@ export const DocumentManage = () =>{
         getDocuments()
     },[])
 
+    useEffect(()=>{
+        if(fileToDelete){
+            setOpenDeleteDialog(true)
+        }
+    }, [fileToDelete])
+
     const handleUploadDoc = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
 
         if (!file) return;
         const formData:FormData = new FormData()
         formData.append('file', file)
+        setAddingDoc(true)
         await documentServices.postDocument(formData).then(()=>{
             getDocuments()
+        }).finally(()=>{
+            setAddingDoc(false)
         })
 
     }
 
-    const onDeleteFile = async (fileId: number) => {
-        await documentServices.deleteDocument(fileId).then(()=>{
+    const onDeleteFile = async () => {
+        if(fileToDelete)
+        await documentServices.deleteDocument(fileToDelete).then(()=>{
             getDocuments()
+        }).finally(()=>{
+            setOpenDeleteDialog(false)
+            setFiletToDelete(null)
         })
+    }
+
+    const onCloseDeleteDialog = () => {
+        setOpenDeleteDialog(false)
+        setFiletToDelete(null)
     }
 
     return(
@@ -57,19 +86,24 @@ export const DocumentManage = () =>{
                     borderColor:'#E0E0E0', 
                     padding:10,
                 }}>
-                <div style={{
-                    display:"flex", 
-                    flexDirection:"row", 
-                    flexWrap:'wrap'
-                }}>
-                    {
+                {gettingDocs ? (
+                    <div style={{textAlign:'center'}}>
+                        <CircularProgress />
+                    </div>
+                ) :
+                    <div style={{
+                        display:"flex", 
+                        flexDirection:"row", 
+                        flexWrap:'wrap'
+                    }}>
+                        {
                         files.map((file: any, index: number) => (
                             file.stored_name &&
                             <div 
                                 key={index} 
                                 style={{display:"flex", flexDirection:"column", margin:15, maxWidth:150, alignItems:'center'}} 
                             >
-                                <CloseIcon style={{alignSelf:"flex-end", cursor:'pointer'}} onClick={()=>onDeleteFile(file.id)}/>
+                                <CloseIcon style={{alignSelf:"flex-end", cursor:'pointer'}} onClick={()=>setFiletToDelete(file.id)}/>
                                 <div 
                                     style={{display:"flex", flexDirection:"column", cursor:'pointer', alignItems:'center'}}
                                     onClick={()=>window.open(`http://localhost:3000/uploads/${file.stored_name}`)}
@@ -90,11 +124,16 @@ export const DocumentManage = () =>{
                             </div>
                         ))
                     }
-                </div>
-                <div style={{textAlign:'center'}}>
-                    <label htmlFor="upload-file" style={{ cursor: "pointer" }}>
-                        <ControlPointIcon style={{ fontSize: 40 }} />
-                    </label>
+                </div>}
+                {addingDoc ? (
+                    <div style={{textAlign:'center'}}>
+                        <CircularProgress />
+                    </div>
+                ) :
+                    <div style={{textAlign:'center'}}>
+                        <label htmlFor="upload-file" style={{ cursor: "pointer" }}>
+                            <ControlPointIcon style={{ fontSize: 40 }} />
+                        </label>
 
                     <input
                         id="upload-file"
@@ -102,8 +141,17 @@ export const DocumentManage = () =>{
                         style={{ display: "none" }}
                         onChange={handleUploadDoc}
                     />
-                </div>
+                </div>}
             </div>
+            <Dialog open={openDeleteDialog} onClose={onCloseDeleteDialog}>
+                <DialogContent>
+                    <p>¿Está seguro de que desea eliminar este archivo?</p>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onCloseDeleteDialog}>Cancelar</Button>
+                    <Button onClick={onDeleteFile} color="error">Eliminar</Button>
+                </DialogActions>
+            </Dialog>
         </div>
     )
 }
