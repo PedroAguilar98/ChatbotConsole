@@ -9,7 +9,8 @@ import {
     FaFileImage,
     FaFileArchive,
     FaFileAlt,
-    FaFile
+    FaFile,
+    FaFileCsv
 } from "react-icons/fa";
 
 import ControlPointIcon from '@mui/icons-material/ControlPoint';
@@ -115,7 +116,11 @@ export const DocumentManage = () =>{
                                         <FaFileAlt size={60} /> :
                                         file.mime_type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ?
                                         <FaFileWord size={60} color="#1976D2" /> :
-                                        <FaFile size={60} />
+                                        file.mime_type === "text/csv" ?
+                                        <FaFileCsv size={60} color="#217346" /> :
+                                        file.mime_type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ?
+                                        <FaFileExcel size={60} color="#217346" /> :
+                                        <FaFile size={60} color="#1976D2"/>
                                     }
                                     <label style={{textAlign:"center", wordWrap:"break-word", cursor: 'inherit', marginTop:5}}>
                                         {file.name}
